@@ -1,6 +1,10 @@
 // [AV]npc - AVsitter support for OpenSim NPC
 // By Typhaine Artez, base on PMAC 2.5 by Aine Caoimhe
+//
+// Version 1.2 - March 2021
+// Version 1.1 - November 2020
 // Version 1.0 - April 2019
+//
 // Provided under Creative Commons Attribution-Non-Commercial-ShareAlike 4.0 International license.
 // Please be sure you read and adhere to the terms of this license: https://creativecommons.org/licenses/by-nc-sa/4.0/
 //
@@ -9,6 +13,7 @@
 
 integer NPC_MESSAGENUMBER = 90514;  // 14=position of "N" in alphabet ;-)
 string MAIN_SCRIPT = "[AV]sitA";
+string VERSION = "1.1";
 
 list invNpc;                // [notecard, NPC name] list
 list sitters;               // avatar key or NULL_KEY for all seats
@@ -18,6 +23,7 @@ integer menu_page;
 
 init() {
     // build NPC list from inventory notecards
+    invNpc = [];
     integer i = llGetInventoryNumber(INVENTORY_NOTECARD);
     while (~(--i)) {
         string name = llGetInventoryName(INVENTORY_NOTECARD, i);
@@ -39,18 +45,44 @@ init() {
     integer c = llGetObjectPrimCount(llGetKey());
     for (i = 0; ++c <= p; ++i)
         setSeat(llGetLinkKey(c), i);
+    llOwnerSay(llGetScriptName() + "["+VERSION+"] " + (string)(llGetListLength(invNpc)/2) + " NPCs");
 }
 
 setSeat(key who, integer seat) {
     sitters = llListReplaceList(sitters, [who], seat, seat);
 }
 
+removeNpcs() {
+    // check if remains only NPCs, then remove them
+    key who;
+    integer hasAgent = FALSE;
+    integer i = llGetListLength(sitters);
+    while (~(--i)) {
+        who = llList2Key(sitters, i);
+        if (NULL_KEY != who && !osIsNpc(who)) {
+            hasAgent = TRUE;
+            i = -1;
+        }
+    }
+    if (!hasAgent) {
+        i = llGetListLength(sitters);
+        while (~(--i)) {
+            who = llList2Key(sitters, i);
+            osNpcRemove(who);
+            sitters = llListReplaceList(sitters, [NULL_KEY], i, i);
+        }
+    }
+}
+
 menuNpc(key id) {
     list buttons;
     string txt = "ADD NPC\nSelect the NPC to add. It will occupy the first available position\n\n";
+    string npc;
     integer i;
-    for (;i < llGetListLength(invNpc); i+=2)
-        buttons += llList2String(invNpc, i+1);
+    for (;i < llGetListLength(invNpc); i+=2) {
+        npc = llList2String(invNpc, i+1);
+        if ("" != npc) buttons += llList2String(invNpc, i+1);
+    }
     buttons = llList2List(buttons, menu_page, menu_page+8);
     txt += llDumpList2String(buttons, "\n");
     while (9 > llGetListLength(buttons))
@@ -85,8 +117,11 @@ default {
     }
     link_message(integer sender, integer num, string str, key id) {
         if (llGetLinkNumber() != sender) return;
-        if (90065 == num) setSeat(NULL_KEY, (integer)str);
-        else if (90070 == num) setSeat(id, (integer)str);
+        if (90070 == num) setSeat(id, (integer)str);
+        else if (90065 == num) {
+            setSeat(NULL_KEY, (integer)str);
+            removeNpcs();
+        }
         else if (90030 == num) {
             // swap
             sitters = llListReplaceList(sitters, [NULL_KEY], (integer)str, (integer)str);
