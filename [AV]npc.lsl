@@ -1,10 +1,8 @@
 // [AV]npc - AVsitter support for OpenSim NPC
 // By Typhaine Artez, base on PMAC 2.5 by Aine Caoimhe
-//
+// Version 1.3 - October 2024
 // Version 1.2 - March 2021
 // Version 1.1 - November 2020
-// Version 1.0 - April 2019
-//
 // Provided under Creative Commons Attribution-Non-Commercial-ShareAlike 4.0 International license.
 // Please be sure you read and adhere to the terms of this license: https://creativecommons.org/licenses/by-nc-sa/4.0/
 //
@@ -28,7 +26,7 @@ init() {
     while (~(--i)) {
         string name = llGetInventoryName(INVENTORY_NOTECARD, i);
         if (!llSubStringIndex(name, ".NPC")) {
-            list newNpc = [ name, llDumpList2String(llList2List(llParseString2List(name, [], [" "]), 1, -1), " ") ];
+            list newNpc = [ name, llDumpList2String(llList2List(llParseString2List(name, [" "], [""]), 1, -1), " ") ];
             integer n = llListFindList(invNpc, [name]);
             if (~n) invNpc = llListReplaceList(invNpc, newNpc, n, n+2);
             else invNpc = newNpc + invNpc;
